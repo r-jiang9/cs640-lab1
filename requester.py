@@ -12,9 +12,17 @@ if __name__ == "__main__":
     for arg in vars(args):
         print(f'{arg}: {getattr(args, arg)}, {type(getattr(args, arg))}')
     port = args.port
-    req_port = args.requester_port
     if not (2049 < port < 65536):
         raise Exception('port should be in the range 2049 < port < 65536')
+    UDP_IP = '127.0.0.1'
+    UDP_PORT = 5005
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP, UDP_PORT)) 
+
+    while True:
+        data, addr = sock.recvfrom(1024) # pass buffer size
+        print(f"received message: {data}")
+
 
 # The requester is invoked in the following way.
 

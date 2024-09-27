@@ -1,7 +1,9 @@
 import argparse
 import socket
 
+# The sender will chunk a requested file and send each file chunk via UDP packets to the requester. 
 if __name__ == "__main__":
+    # parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, required=True, help='the port where the sender waits for requests')
     parser.add_argument('-g', '--requester_port', type=int, required=True, help='requester port, port where the requester is waiting')
@@ -21,7 +23,13 @@ if __name__ == "__main__":
         raise Exception('ports should be in the range 2049 < port < 65536')
 
     print(port, req_port)
-
+    # reference: https://wiki.python.org/moin/UdpCommunication
+    # creates a socket object and binds it to local host + port
+    UDP_IP = '127.0.0.1'
+    MESSAGE = b'TEST MESSAGE' # NOTE: need to send bytes, not str. use .encode() in the future
+    UDP_PORT = 5005 # hard coding the port for now
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 # Each sender will have a copy of the file parts that it is responsible for in the same folder as it is running from, so that it can access them directly. The sender should be invoked in the following way:
 
 #  python3 sender.py -p <port> -g <requester port> -r <rate> -q <seq_no> -l <length>
@@ -31,5 +39,3 @@ if __name__ == "__main__":
 # rate is the number of packets to be sent per second,
 # seq_no is the initial sequence of the packet exchange,
 # length is the length of the payload (in bytes) in the packets.
-
-# Moreover, in case a wrong input is entered (e.g., string instead of number) your program should print an error explaining the mistake and exit.
