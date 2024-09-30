@@ -1,5 +1,6 @@
 import argparse
 import socket
+import struct
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -8,17 +9,26 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--file', type=str, required=True, help='The name of the file being requested')
 
     args = parser.parse_args()
-    print("Argument Values")
-    for arg in vars(args):
-        print(f'{arg}: {getattr(args, arg)}, {type(getattr(args, arg))}')
+    
     port = args.port
+    file = args.file
+
     if not (2049 < port < 65536):
         raise Exception('port should be in the range 2049 < port < 65536')
-    UDP_IP = '127.0.0.1'
-    UDP_PORT = 5005
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((UDP_IP, UDP_PORT)) 
 
+    # construct a request packet, total 9 bytes
+    # 1 byte: packet type (char)
+    # 4 bytes: sequence num (uint)
+    # 4 bytes: length (uint)
+
+    udp_header = struct.pack('!cII', bytes('R', 'utf-8'), 0, 0)
+    payload = file
+    payload_with_header = udp_header + payload
+    UDP_IP = '127.0.0.1'
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP, port)) 
+    sock.sendto(payload_with_header, port) # port should be the sender's port: how do we figure that out?
+ 
     while True:
         data, addr = sock.recvfrom(1024) # pass buffer size
         print(f"received message: {data}")
