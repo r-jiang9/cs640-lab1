@@ -3,6 +3,13 @@ import socket
 import struct
 import time
 
+def create_data_packet(packet_type, seq_num, length):
+    udp_header = struct.pack('!cII', bytes(packet_type, 'utf-8'), socket.htonl(seq_num), length)
+
+    #payload = bytes(file_name, 'utf-8')
+    #packet = udp_header + payload
+    return packet
+
 # The sender will chunk a requested file and send each file chunk via UDP packets to the requester. 
 if __name__ == "__main__":
     # parse arguments
@@ -38,12 +45,9 @@ if __name__ == "__main__":
     # 1 byte: packet type (char)
     # 4 bytes: sequence num
     # 4 bytes: length
-    # udp_header = struct.pack("!cII", req_port, port, length)
+    udp_header = struct.pack("!cII", req_port, port, length)
 
-    print(port, req_port)
-    # reference: https://wiki.python.org/moin/UdpCommunication
-    # creates a socket object and binds it to local host + port
-    UDP_IP = '127.0.0.1'
+    UDP_IP = '127.0.0.1' # TODO: hardcoding for now
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         try:
