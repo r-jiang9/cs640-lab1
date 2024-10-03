@@ -1,19 +1,16 @@
-import argparse
 import socket
+import argparse
 import struct
-import time
+import os
+import math
 
-def create_data_packet(packet_type, seq_num, length):
-    udp_header = struct.pack('!cII', bytes(packet_type, 'utf-8'), socket.htonl(seq_num), length)
-
-    #payload = bytes(file_name, 'utf-8')
-    #packet = udp_header + payload
+def create_data_packet(seq_num, length):
+    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), length)
+    packet = udp_header
+    print(f'Created data packet: {packet}')
     return packet
 
-# The sender will chunk a requested file and send each file chunk via UDP packets to the requester. 
 if __name__ == "__main__":
-    # parse arguments
-    # python3 sender.py -p <port> -g <requester port> -r <rate> -q <seq_no> -l <length>
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, required=True, help='the port where the sender waits for requests')
     parser.add_argument('-g', '--requester_port', type=int, required=True, help='requester port, port where the requester is waiting')
@@ -21,47 +18,42 @@ if __name__ == "__main__":
     parser.add_argument('-q', '--seq_no', type=int, required=True, help='initial sequence of the packet exchange')
     parser.add_argument('-l', '--length', type=int, required=True, help='length of the payload (in bytes) in the packets')
 
-    # sender and requester port should be in this range: 2049 < port < 65536
     args = parser.parse_args()
-    print("Argument Values")
-    for arg in vars(args):
-        print(f'{arg}: {getattr(args, arg)}, {type(getattr(args, arg))}')
-    
-    # set all args
     port = args.port
     req_port = args.requester_port
     rate = args.rate
     seq_no = args.seq_no
     length = args.length
 
-    if not (2049 < port < 65536 and 2049 < req_port < 65536):
-        raise Exception('ports should be in the range 2049 < port < 65536')
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = port
+    packet = create_data_packet(seq_no, length)
 
-    # socket for listening to requests
-    listen_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    listen_sock.bind(('127.0.0.1', port))
-
-    # assemble the packet header, total 9 bytes
-    # 1 byte: packet type (char)
-    # 4 bytes: sequence num
-    # 4 bytes: length
-    udp_header = struct.pack("!cII", req_port, port, length)
-
-    UDP_IP = '127.0.0.1' # TODO: hardcoding for now
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP, UDP_PORT))
+
+    print(f"Listening for requests on {UDP_IP}:{UDP_PORT}")
+
     while True:
-        try:
-            # listen for request
-            listen_sock.settimeout(1) 
-            request_data, addr = listen_sock.recvfrom(1024) 
-            print(f"Received request from {addr}: {request_data.decode('utf-8')}")
+        # waiting for packet
+        data, addr = sock.recvfrom(1024)
+        print(f"Received request: {data} from {addr}")
 
-        except socket.timeout:
-            # continue sending stuff
-            pass
-        # TODO: message will be bytes from the file
-        MESSAGE = b'FILLER STUFF FOR NOW'
-        sock.sendto(MESSAGE, ('127.0.0.1', req_port))
-        # TODO: will have to sleep for some amount of time according to rate
-# Each sender will have a copy of the file parts that it is responsible for in the same folder as it is running from, so that it can access them directly. The sender should be invoked in the following way:
+        # check if it's a request packet
+        if data[0] == ord('R'):
+            print("received request packet, sending data")
+            # process the filename from payload
+            file_name = data[9:].decode('utf-8')
+            file_size = os.path.getsize(file_name) # get size of file in bytes
+            print(f'{file_name} size: {file_size}')
 
+            num_packets = math.ceil(file_size / length)
+            print(f'num packets needed to send packet: {num_packets}')
+
+            with open(file_name) as f:
+                # open file and begin processing data
+                pass
+        
+            # send data packets back
+            sock.sendto(packet, addr)  # Send a data packet back to the requester
+            print(f"Sent data packet to {addr}")
