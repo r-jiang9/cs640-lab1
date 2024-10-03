@@ -15,11 +15,6 @@ def create_end_packet(seq_num):
     packet = udp_header
     return packet  
 
-def create_send_data_packet(seq_num, length):
-    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), socket.htonl(length))
-    packet = udp_header
-    return packet
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, required=True, help='the port where the sender waits for requests')
@@ -40,10 +35,12 @@ if __name__ == "__main__":
     UDP_IP = "127.0.0.1"
     UDP_PORT = port
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((UDP_IP, UDP_PORT))
+    send_ip = socket.gethostbyname('royal-02')
 
-    print(f"Listening for requests on {UDP_IP}:{UDP_PORT}")
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((send_ip, UDP_PORT))
+
+    print(f"Listening for requests on {send_ip}:{UDP_PORT}")
 
     while True:
         # wait for packet
@@ -82,4 +79,5 @@ if __name__ == "__main__":
             # done sending data, send the end packet
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)
+            print('END packet')
             # send data packets back
