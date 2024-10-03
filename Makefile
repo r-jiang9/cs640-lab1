@@ -1,5 +1,4 @@
-# test case set ups
-
+# test case set ups. 
 # 20 pts: Requesting a file that lives on a single sender that fits in one packet (i.e. the sender’s length parameter is greater than or equal to the file length)
 
 # 20 pts: Requesting a file that is not split, i.e. lives on a single sender but requires multiple packets to be sent
