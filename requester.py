@@ -1,6 +1,7 @@
 import socket
 import argparse
 import struct
+from datetime import datetime
 
 def create_request_packet(file_name):
     udp_header = struct.pack('!cII', bytes('R', 'utf-8'), socket.htonl(0), 0)
@@ -36,5 +37,43 @@ if __name__ == "__main__":
         # wait for response
         data, addr = sock.recvfrom(1024)
         print(f"Received data: {data} from {addr}")
+
+        sender_ip = addr[0]
+        sender_port = addr[1]
+
+        if data[0] == ord('D'):
+            # data packet
+            packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
+            seq_num = socket.ntohl(seq_num)  # Convert back from network byte order
+            payload_length = socket.ntohl(payload_length)
+            payload = data[9:]  # The rest of the packet is the payload
+
+            # get curr time
+            current_time = datetime.now()
+            formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            first_4_bytes = payload[:4] if len(payload) >= 4 else payload
+
+            print('DATA packet')
+            print(f'send time: {formatted_time}')
+            print(f'percentage received: IDK')
+            print(f'requester address: {sender_ip}')
+            print(f'first 4 bytes: {first_4_bytes}\n')
+        elif data[0] == ord('E'):
+            # data packet
+            packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
+            seq_num = socket.ntohl(seq_num)  # Convert back from network byte order
+            payload_length = socket.ntohl(payload_length)
+            payload = data[9:]  # The rest of the packet is the payload
+
+            # get curr time
+            current_time = datetime.now()
+            formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            first_4_bytes = payload[:4] if len(payload) >= 4 else payload
+
+            print('END packet')
+            print(f'send time: {formatted_time}')
+            print(f'percentage received: IDK')
+            print(f'requester address: {sender_ip}')
+            print(f'first 4 bytes: {first_4_bytes}\n')
         # sock.sendto(data, addr)  # Echo back the received message
 

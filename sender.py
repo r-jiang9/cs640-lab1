@@ -4,10 +4,20 @@ import struct
 import os
 import math
 
-def create_data_packet(seq_num, length):
+def create_data_packet(seq_num, length, payload):
+    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), length)
+    packet = udp_header + payload
+    print(f'Created data packet: {packet}')
+    return packet
+
+def create_end_packet(seq_num):
+    udp_header = struct.pack('!cII', bytes('E', 'utf-8'), socket.htonl(seq_num), 0)
+    packet = udp_header
+    return packet  
+
+def create_send_data_packet(seq_num, length):
     udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), length)
     packet = udp_header
-    print(f'Created data packet: {packet}')
     return packet
 
 if __name__ == "__main__":
@@ -27,7 +37,7 @@ if __name__ == "__main__":
 
     UDP_IP = "127.0.0.1"
     UDP_PORT = port
-    packet = create_data_packet(seq_no, length)
+    packet = create_data_packet(seq_no, length, b'THIS IS A RANDOM MSG')
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
@@ -35,7 +45,7 @@ if __name__ == "__main__":
     print(f"Listening for requests on {UDP_IP}:{UDP_PORT}")
 
     while True:
-        # waiting for packet
+        # wait for packet
         data, addr = sock.recvfrom(1024)
         print(f"Received request: {data} from {addr}")
 
@@ -47,13 +57,16 @@ if __name__ == "__main__":
             file_size = os.path.getsize(file_name) # get size of file in bytes
             print(f'{file_name} size: {file_size}')
 
-            num_packets = math.ceil(file_size / length)
-            print(f'num packets needed to send packet: {num_packets}')
-
-            with open(file_name) as f:
-                # open file and begin processing data
-                pass
-        
+            with open(file_name,'rb') as f: # read file contents as bytes
+                pointer = 0
+                while pointer < file_size:
+                    chunk = f.read(length)
+                    data_packet = create_data_packet(seq_no, len(chunk), chunk)
+                    pointer += len(chunk)
+                    seq_no += len(chunk)      
+                    sock.sendto(data_packet, addr)  # Send a data packet back to the requester  
+                    print(f"Sent data packet to {addr}")
+            # done sending data, send the end packet
+            end_packet = create_end_packet(seq_no)
+            sock.sendto(end_packet, addr)
             # send data packets back
-            sock.sendto(packet, addr)  # Send a data packet back to the requester
-            print(f"Sent data packet to {addr}")
