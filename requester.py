@@ -5,7 +5,7 @@ import csv
 from datetime import datetime
 
 def create_request_packet(file_name):
-    udp_header = struct.pack('!cII', bytes('R', 'utf-8'), socket.htonl(0), 0)
+    udp_header = struct.pack('!cII', bytes('R', 'utf-8'), socket.htonl(0), socket.htonl(0))
     payload = bytes(file_name, 'utf-8')
     packet = udp_header + payload
     return packet
@@ -33,19 +33,22 @@ if __name__ == "__main__":
         for row in reader:
             tracker.append(row)
     print(tracker)
-    
+
+    # dict w/ ID, end packet status, and accumulated payloads
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, port))
 
     # send a request packet
     req_packet = create_request_packet(file_name)
     sock.sendto(req_packet, (UDP_IP, UDP_PORT))
+    content = ''
 
     print(f"Listening on {UDP_IP}:{port}")
     while True:
         # wait for response
         data, addr = sock.recvfrom(1024)
-        print(f"Received data: {data} from {addr}")
+        print(f"Received packet: {data} from {addr}")
 
         sender_ip = addr[0]
         sender_port = addr[1]
@@ -53,9 +56,13 @@ if __name__ == "__main__":
         if data[0] == ord('D'):
             # data packet
             packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
-            seq_num = socket.ntohl(seq_num)  # Convert back from network byte order
+            seq_num = socket.ntohl(seq_num)  # convert back from network byte order
             payload_length = socket.ntohl(payload_length)
             payload = data[9:]  # The rest of the packet is the payload
+
+            # convert payload to string
+            payload_str = payload.decode('utf-8')
+            content += payload_str
 
             # get curr time
             current_time = datetime.now()
@@ -84,5 +91,10 @@ if __name__ == "__main__":
             print(f'percentage received: IDK')
             print(f'requester address: {sender_ip}')
             print(f'first 4 bytes: {first_4_bytes}\n')
-        # sock.sendto(data, addr)  # Echo back the received message
+            # check tracker dict to see if all end packets have been received
+            # if yes, write to output file
+            
+            with open('output.txt', 'w') as f:
+                f.write(content)
+
 

@@ -2,21 +2,21 @@ import socket
 import argparse
 import struct
 import os
-import math
+import time
+from datetime import datetime
 
 def create_data_packet(seq_num, length, payload):
-    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), length)
+    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), socket.htonl(length))
     packet = udp_header + payload
-    print(f'Created data packet: {packet}')
     return packet
 
 def create_end_packet(seq_num):
-    udp_header = struct.pack('!cII', bytes('E', 'utf-8'), socket.htonl(seq_num), 0)
+    udp_header = struct.pack('!cII', bytes('E', 'utf-8'), socket.htonl(seq_num), socket.htonl(0))
     packet = udp_header
     return packet  
 
 def create_send_data_packet(seq_num, length):
-    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), length)
+    udp_header = struct.pack('!cII', bytes('D', 'utf-8'), socket.htonl(seq_num), socket.htonl(length))
     packet = udp_header
     return packet
 
@@ -35,9 +35,10 @@ if __name__ == "__main__":
     seq_no = args.seq_no
     length = args.length
 
+    pps = 1 / rate
+
     UDP_IP = "127.0.0.1"
     UDP_PORT = port
-    packet = create_data_packet(seq_no, length, b'THIS IS A RANDOM MSG')
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     while True:
         # wait for packet
         data, addr = sock.recvfrom(1024)
-        print(f"Received request: {data} from {addr}")
+        req_ip = addr[0]
 
         # check if it's a request packet
         if data[0] == ord('R'):
@@ -62,10 +63,22 @@ if __name__ == "__main__":
                 while pointer < file_size:
                     chunk = f.read(length)
                     data_packet = create_data_packet(seq_no, len(chunk), chunk)
+                    first_4_bytes = data_packet[9:13]
+
+                    sock.sendto(data_packet, addr)
+                    current_time = datetime.now()
+                    formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+
+                    print('DATA packet')
+                    print(f'send time: {formatted_time}')
+                    print(f'requester address: {req_ip}')
+                    print(f'sequence number: {seq_no}')
+                    print(f'first 4 bytes: {first_4_bytes}\n')
+                    time.sleep(rate) # distribute sending intervals
+
                     pointer += len(chunk)
-                    seq_no += len(chunk)      
-                    sock.sendto(data_packet, addr)  # Send a data packet back to the requester  
-                    print(f"Sent data packet to {addr}")
+                    seq_no += len(chunk) 
+
             # done sending data, send the end packet
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)

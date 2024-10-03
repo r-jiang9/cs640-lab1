@@ -23,3 +23,9 @@ In case the packet type is a request, the packet length should be set to 0.
 The payload data is chunks from the file that the requester has requested. The sender chunks the file part that it has to payloads of the size that is identified by the length field in its parameters (see below) and sends them to the requester. The last chunk can be of the size less than the length parameter based on how many bytes are left in the file.
 There is no limit on the max size of the payload length.
 The requester fills the payload field with the name of the file that it is requesting.
+
+```
+python3 sender.py -p 5000 -g 5001 -r 1 -q 100 -l 100
+
+python3 requester.py -p 5001 -o split1.txt
+```
