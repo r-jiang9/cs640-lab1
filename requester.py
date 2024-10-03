@@ -3,6 +3,7 @@ import argparse
 import struct
 import csv
 from datetime import datetime
+from collections import OrderedDict
 
 def create_request_packet(file_name):
     udp_header = struct.pack('!cII', bytes('R', 'utf-8'), socket.htonl(0), socket.htonl(0))
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     # sort the tracker by ID number to make it easier when looping thru the id_dict
     tracker_sorted = sorted(tracker, key=lambda x: int(x[1]))
 
-    id_dict = {}
+    id_dict = OrderedDict() # ensure that IDs are added in ascending order
 
     for row in tracker_sorted:
         print(tracker_sorted[0])
