@@ -1,6 +1,7 @@
 import socket
 import argparse
 import struct
+import csv
 from datetime import datetime
 
 def create_request_packet(file_name):
@@ -25,6 +26,14 @@ if __name__ == "__main__":
     UDP_IP = "127.0.0.1"
     UDP_PORT = 5000
 
+    # read from tracker.txt
+    tracker = []
+    with open('tracker.txt', 'r') as f:
+        reader = csv.reader(f, delimiter = ' ')
+        for row in reader:
+            tracker.append(row)
+    print(tracker)
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, port))
 
