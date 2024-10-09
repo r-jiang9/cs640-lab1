@@ -33,7 +33,6 @@ if __name__ == "__main__":
     pps = 1 / rate
 
     PORT = port
-
     HOST_IP = socket.gethostbyname(socket.gethostname())
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -51,6 +50,20 @@ if __name__ == "__main__":
             print("received request packet, sending data")
             # process the filename from payload
             file_name = data[9:].decode('utf-8')
+            try:
+                file_size = os.path.getsize(file_name) # get size of file in bytes
+            except OSError as e:
+                print(f"OSError: File {file_name} does not exist or is inaccessible")
+                err_end_packet = create_end_packet(seq_no) # TODO: should we just return current seq number?
+                sock.sendto(err_end_packet, addr)
+                raise
+            except Exception as e:
+                print(f"Unexpected Exception: {e}")
+                err_end_packet = create_end_packet(seq_no) # TODO: should we just return current seq number?
+                sock.sendto(err_end_packet, addr)
+                raise
+
+            # file successfully found, continue
             file_size = os.path.getsize(file_name) # get size of file in bytes
             print(f'{file_name} size: {file_size}')
 
@@ -78,5 +91,5 @@ if __name__ == "__main__":
             # done sending data, send the end packet
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)
-            print('END packet')
-            # send data packets back
+            print('DONE: sent END packet')
+            exit(0) # TODO: exit a diff way?

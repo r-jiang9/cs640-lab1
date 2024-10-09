@@ -1,3 +1,2 @@
-hello.txt 1 vm-instunix-02 5000 10B
-split.txt 1 royal-06 5000 23B
-split2.txt 2 vm-instunix-02 5002 20B
+split.txt 1 rockhopper-01 5000 675B
+split.txt 2 snares-10 5002 3467B
