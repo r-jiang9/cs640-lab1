@@ -68,6 +68,7 @@ if __name__ == "__main__":
 
             with open(file_name,'rb') as f: # read file contents as bytes
                 pointer = 0
+                next_packet_time = time.time() # time that we expect the next packet to be sent
                 while pointer < file_size:
                     chunk = f.read(length)
                     data_packet = create_data_packet(seq_no, len(chunk), chunk)
@@ -75,6 +76,7 @@ if __name__ == "__main__":
 
                     sock.sendto(data_packet, addr)
                     current_time = datetime.now()
+
                     formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
                     print('DATA packet')
@@ -82,7 +84,14 @@ if __name__ == "__main__":
                     print(f'requester address: {req_ip}')
                     print(f'sequence number: {seq_no}')
                     print(f'first 4 bytes: {first_4_bytes}\n')
-                    time.sleep(pps) # distribute sending intervals
+                                        
+                    # calculate the expected time for the next packet
+                    next_packet_time += pps
+
+                    # can't sleep for neg amount of time
+                    sleep_time = max(next_packet_time - time.time(), 0)
+
+                    time.sleep(sleep_time) # distribute sending intervals
 
                     pointer += len(chunk)
                     seq_no += len(chunk) 
@@ -90,5 +99,4 @@ if __name__ == "__main__":
             # done sending data, send the end packet
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)
-            print('DONE: sent END packet')
             exit(0)

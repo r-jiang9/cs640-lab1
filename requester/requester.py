@@ -3,6 +3,7 @@ import argparse
 import struct
 import csv
 from datetime import datetime
+import time
 from collections import OrderedDict
 
 def create_request_packet(file_name):
@@ -24,8 +25,6 @@ if __name__ == "__main__":
     PORT = args.port
 
     send_ip = socket.gethostbyname('snares-09')
-    print(send_ip)
-    UDP_PORT = 5000
     start_time = None
 
     # get host name and port from tracker.txt
@@ -41,7 +40,6 @@ if __name__ == "__main__":
     id_dict = OrderedDict() # ensure that IDs are added in ascending order
 
     for row in tracker_sorted:
-        print(tracker_sorted[0])
         if row[0] == file_name:
             # found the file in the table, populate the dict with info
             id_dict[row[1]] = {
@@ -51,7 +49,6 @@ if __name__ == "__main__":
                 "start_time": None,
                 "end_time": None,
             }
-    print(id_dict)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((HOST_IP, PORT))
 
@@ -59,12 +56,15 @@ if __name__ == "__main__":
         send_ip = socket.gethostbyname(id_dict[id]["host"])
         send_port = int(id_dict[id]["port"])
         # 1) send a request packet
-
         running_total = 0
         num_packets = 0
         req_packet = create_request_packet(file_name)
         sock.sendto(req_packet, (send_ip, send_port))
-        # 2) wait for data response
+        print(f"DATA SIZE FOR FILE {id_dict[id]['data_size']}")
+        # 2) wait for data response'
+
+        start_time = time.perf_counter()
+
         while True:
             data, addr = sock.recvfrom(1024)
 
@@ -72,10 +72,11 @@ if __name__ == "__main__":
             sender_port = addr[1]
 
             if data[0] == ord('D'):
+                #if start_time == None:
+                    # first data packet received
+                    #start_time = datetime.now()
                 num_packets += 1
                 content = ''
-                if start_time == None:
-                    start_time = datetime.now()
                 # data packet
                 packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
                 seq_num = socket.ntohl(seq_num)  # convert back from network byte order
@@ -94,7 +95,9 @@ if __name__ == "__main__":
                 running_total += len(payload)
                 print('DATA packet')
                 print(f'send time: {formatted_time}')
-                print(f'percentage received: {running_total/id_dict[id]["data_size"]:.2f}')
+                print(f'sequence number: {seq_num}')
+                print(f"running total: {running_total}")
+                print(f'percentage received: {running_total/id_dict[id]["data_size"] * 100:.2f}%')
                 print(f'requester address: {sender_ip}:{sender_port}')
                 print(f'first 4 bytes: {first_4_bytes}\n')
 
@@ -102,8 +105,10 @@ if __name__ == "__main__":
                     f.write(content)
             elif data[0] == ord('E'):
                 # received end packet
-                end_time = datetime.now()
-                duration = (end_time - start_time).total_seconds() * 1000 # calculated in ms
+                end_time = time.perf_counter()
+                # num_packets += 1
+
+                duration = (end_time - start_time) * 1000 # calculated in ms
                 packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
                 seq_num = socket.ntohl(seq_num)  # Convert back from network byte order
                 payload_length = socket.ntohl(payload_length)
@@ -115,9 +120,17 @@ if __name__ == "__main__":
                 first_4_bytes = payload[:4] if len(payload) >= 4 else payload
 
                 print("END Packet")
-                print(f'total packets: {num_packets}')
+                print(f'send time: {formatted_time}')
+                print(f'sequence number: {seq_num}')
+                print(f'percentage received: {running_total/id_dict[id]["data_size"] * 100:.2f}%')
+                print(f'requester address: {sender_ip}:{sender_port}')
+                print(f'first 4 bytes: {first_4_bytes}\n')
+
+                print(f'Summary:')
+                print(f'sender address: {sender_ip}:{sender_port}')
+                print(f'total data packets: {num_packets}')
                 print(f'total data bytes: {running_total}')
-                print(f'avg packets/second: {num_packets/(duration/1000)} ')
+                print(f'avg packets/second: {num_packets / (duration / 1000)} ')
                 print(f'duration of the test: {duration} ms')
                 print('---------------------------------')
 
