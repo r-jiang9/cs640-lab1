@@ -47,19 +47,18 @@ if __name__ == "__main__":
 
         # check if it's a request packet
         if data[0] == ord('R'):
-            print("received request packet, sending data")
             # process the filename from payload
             file_name = data[9:].decode('utf-8')
             try:
                 file_size = os.path.getsize(file_name) # get size of file in bytes
             except OSError as e:
                 print(f"OSError: File {file_name} does not exist or is inaccessible")
-                err_end_packet = create_end_packet(seq_no) # TODO: should we just return current seq number?
+                err_end_packet = create_end_packet(seq_no)
                 sock.sendto(err_end_packet, addr)
                 raise
             except Exception as e:
                 print(f"Unexpected Exception: {e}")
-                err_end_packet = create_end_packet(seq_no) # TODO: should we just return current seq number?
+                err_end_packet = create_end_packet(seq_no)
                 sock.sendto(err_end_packet, addr)
                 raise
 
@@ -83,7 +82,7 @@ if __name__ == "__main__":
                     print(f'requester address: {req_ip}')
                     print(f'sequence number: {seq_no}')
                     print(f'first 4 bytes: {first_4_bytes}\n')
-                    time.sleep(rate) # distribute sending intervals
+                    time.sleep(pps) # distribute sending intervals
 
                     pointer += len(chunk)
                     seq_no += len(chunk) 
@@ -92,4 +91,4 @@ if __name__ == "__main__":
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)
             print('DONE: sent END packet')
-            exit(0) # TODO: exit a diff way?
+            exit(0)

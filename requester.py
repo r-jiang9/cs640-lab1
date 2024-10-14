@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # sort the tracker by ID number to make it easier when looping thru the id_dict
     tracker_sorted = sorted(tracker, key=lambda x: int(x[1]))
 
-    id_dict = OrderedDict() # ensure that IDs are added in ascending order
+    id_dict = OrderedDict()
 
     for row in tracker_sorted:
         print(tracker_sorted[0])
@@ -50,7 +50,6 @@ if __name__ == "__main__":
                 "data_size": row[4],
                 "start_time": None,
                 "end_time": None,
-                "accumulated_payload": None
             }
     print(id_dict)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -59,15 +58,13 @@ if __name__ == "__main__":
     for id in id_dict:
         send_ip = socket.gethostbyname(id_dict[id]["host"])
         send_port = int(id_dict[id]["port"])
-        print(send_ip, send_port)
         # 1) send a request packet
 
+        running_total = 0
         req_packet = create_request_packet(file_name)
         sock.sendto(req_packet, (send_ip, send_port))
-        print(f'sent packet to {send_ip}:{send_port}')
         # 2) wait for data response
         while True:
-        # wait for response
             data, addr = sock.recvfrom(1024)
 
             sender_ip = addr[0]
@@ -81,7 +78,7 @@ if __name__ == "__main__":
                 packet_type, seq_num, payload_length = struct.unpack('!cII', data[:9])
                 seq_num = socket.ntohl(seq_num)  # convert back from network byte order
                 payload_length = socket.ntohl(payload_length)
-                payload = data[9:]  # The rest of the packet is the payload
+                payload = data[9:]  # the rest of the packet is the payload
 
                 # convert payload to string
                 payload_str = payload.decode('utf-8')
@@ -92,9 +89,10 @@ if __name__ == "__main__":
                 formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                 first_4_bytes = payload[:4] if len(payload) >= 4 else payload
 
+                running_total += len(payload)
                 print('DATA packet')
                 print(f'send time: {formatted_time}')
-                print(f'percentage received: IDK')
+                print(f'percentage received: {running_total/id_dict[id]["host"]:.2f}')
                 print(f'requester address: {sender_ip}:{sender_port}')
                 print(f'first 4 bytes: {first_4_bytes}\n')
             elif data[0] == ord('E'):
@@ -111,21 +109,15 @@ if __name__ == "__main__":
                 formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                 first_4_bytes = payload[:4] if len(payload) >= 4 else payload
 
-                print('END packet')
-                print(f'send time: {formatted_time}')
-                print(f'percentage received: IDK')
-                print(f'requester address: {sender_ip}:{sender_port}')
-                print(f'first 4 bytes: {first_4_bytes}\n')
-
-                print('---------------------------------')
-                print('summary')
+                print("END Packet")
                 print(f'total packets: ')
-                print(f'total data bytes: ')
+                print(f'total data bytes: {running_total}')
                 print(f'avg packets/second: ')
                 print(f'duration of the test: {duration} ms')
+                print('---------------------------------')
 
                 # end packet received, write contents to file
                 with open(file_name, 'w') as f:
                     f.write(content)
-                # last packet received from this host, so break out of the loop and continue to the next request if needed
+                # last packet received from this host, so continue to the next request if needed
                 break

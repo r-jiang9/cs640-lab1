@@ -1,2 +1,2 @@
-split.txt 1 rockhopper-01 5000 675B
-split.txt 2 snares-10 5002 3467B
+split.txt 1 royal-10 5000 675B
+split.txt 2 royal-10 5002 3467B
