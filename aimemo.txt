@@ -1,0 +1,4 @@
+Used: ChatGPT 
+For:
+- quickly generating bash script for testing
+- switching from time.time() to time.perf_counter() to make time tracking more accurate

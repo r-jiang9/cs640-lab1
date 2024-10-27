@@ -44,6 +44,7 @@ if __name__ == "__main__":
         # wait for packet
         data, addr = sock.recvfrom(1024)
         req_ip = addr[0]
+        req_port = addr[1]
 
         # check if it's a request packet
         if data[0] == ord('R'):
@@ -64,7 +65,6 @@ if __name__ == "__main__":
 
             # file successfully found, continue
             file_size = os.path.getsize(file_name) # get size of file in bytes
-            print(f'{file_name} size: {file_size}')
 
             with open(file_name,'rb') as f: # read file contents as bytes
                 pointer = 0
@@ -81,13 +81,14 @@ if __name__ == "__main__":
 
                     print('DATA packet')
                     print(f'send time: {formatted_time}')
-                    print(f'requester address: {req_ip}')
+                    print(f'requester address: {req_ip}:{req_port}')
                     print(f'sequence number: {seq_no}')
-                    print(f'first 4 bytes: {first_4_bytes}\n')
+                    print(f'first 4 bytes: {first_4_bytes.decode("utf-8")}\n')
                                         
-                    # calculate the time for the next packet
+                    # calculate the expected time for the next packet
                     next_packet_time += pps
 
+                    # can't sleep for neg amount of time
                     sleep_time = max(next_packet_time - time.time(), 0)
 
                     time.sleep(sleep_time) # distribute sending intervals
@@ -98,4 +99,13 @@ if __name__ == "__main__":
             # done sending data, send the end packet
             end_packet = create_end_packet(seq_no)
             sock.sendto(end_packet, addr)
+            
+            current_time = datetime.now()
+            formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            first_4_bytes = end_packet[9:13].decode('utf-8')
+            print("END Packet")
+            print(f'send time: {formatted_time}')
+            print(f'requester address: {req_ip}:{req_port}')
+            print(f'sequence number: {seq_no}')
+            print(f"first 4 bytes: {first_4_bytes}")
             exit(0)

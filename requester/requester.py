@@ -13,8 +13,7 @@ def create_request_packet(file_name):
     return packet
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-                description='sum the integers at the command line')
+    parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, required=True, help='Port number, required')
     parser.add_argument('-o', '--file', type=str, required=True, help='The name of the file being requested')
 
@@ -60,9 +59,8 @@ if __name__ == "__main__":
         num_packets = 0
         req_packet = create_request_packet(file_name)
         sock.sendto(req_packet, (send_ip, send_port))
-        print(f"DATA SIZE FOR FILE {id_dict[id]['data_size']}")
+        
         # 2) wait for data response'
-
         start_time = time.perf_counter()
 
         while True:
@@ -95,11 +93,11 @@ if __name__ == "__main__":
                 running_total += len(payload)
                 print('DATA packet')
                 print(f'send time: {formatted_time}')
-                print(f'sequence number: {seq_num}')
-                print(f"running total: {running_total}")
+                print(f'sender address: {sender_ip}:{sender_port}')
+                print(f'packet sequence number: {seq_num}')
+                print(f"payload length (in bytes): {len(payload)}")
                 print(f'percentage received: {running_total/id_dict[id]["data_size"] * 100:.2f}%')
-                print(f'requester address: {sender_ip}:{sender_port}')
-                print(f'first 4 bytes: {first_4_bytes}\n')
+                print(f'first 4 bytes: {first_4_bytes.decode("utf-8")}\n')
 
                 with open(file_name, 'a') as f:
                     f.write(content)
@@ -121,18 +119,20 @@ if __name__ == "__main__":
 
                 print("END Packet")
                 print(f'send time: {formatted_time}')
+                print(f'sender address: {sender_ip}:{sender_port}')
                 print(f'sequence number: {seq_num}')
-                print(f'percentage received: {running_total/id_dict[id]["data_size"] * 100:.2f}%')
-                print(f'requester address: {sender_ip}:{sender_port}')
-                print(f'first 4 bytes: {first_4_bytes}\n')
+                print(f'payload length (in bytes): {len(payload)}')
+                print(f'first 4 bytes: {first_4_bytes.decode("utf-8")}\n')
 
                 print(f'Summary:')
                 print(f'sender address: {sender_ip}:{sender_port}')
-                print(f'total data packets: {num_packets}')
-                print(f'total data bytes: {running_total}')
+                print(f'total data packets received: {num_packets}')
+                print(f'total data bytes received: {running_total}')
                 print(f'avg packets/second: {num_packets / (duration / 1000)} ')
                 print(f'duration of the test: {duration} ms')
                 print('---------------------------------')
 
                 # last packet received from this host, so continue to the next request if needed
                 break
+    # done looping thru all ids, exit
+    exit(0)

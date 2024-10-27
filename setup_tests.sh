@@ -24,36 +24,40 @@ for dir in sender*; do
     fi
 done
 
-cp "requester.py" "./requester"
-# Copy tracker.txt to the ./requester directory
-if [ -f "$test_dir/tracker.txt" ]; then
-    cp "$test_dir/tracker.txt" "./requester/"
-    echo "Copied tracker.txt to ./requester"
-else
-    echo "tracker.txt not found in $test_dir."
-    exit 1
-fi
-
 # Initialize a counter for the split files
 i=1
 
 # Copy split[i].txt files to the corresponding sender[i] directories
 while true; do
-    split_file="$test_dir/split${i}.txt"
+    split_file="$test_dir/large${i}.txt"
     if [ ! -f "$split_file" ]; then
+        echo "No more split files found. Stopping at split${i}.txt."
         break
     fi
 
     # Create the sender[i] directory
     sender_dir="sender${i}"
     mkdir "$sender_dir"
+    if [ $? -ne 0 ]; then
+        echo "Error creating directory $sender_dir"
+        exit 1
+    fi
+    echo "Created directory: $sender_dir"
 
     # Copy the split file to the sender[i] directory
     cp "$split_file" "$sender_dir/"
+    if [ $? -ne 0 ]; then
+        echo "Error copying $split_file to $sender_dir"
+        exit 1
+    fi
     echo "Copied $split_file to $sender_dir/"
 
     # Copy sender.py to the sender[i] directory
     cp "./sender.py" "$sender_dir/"
+    if [ $? -ne 0 ]; then
+        echo "Error copying sender.py to $sender_dir"
+        exit 1
+    fi
     echo "Copied sender.py to $sender_dir/"
 
     # Increment the counter
